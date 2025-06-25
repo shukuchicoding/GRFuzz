@@ -113,27 +113,6 @@ class Fuzzer(object):
         if len(buf) < 200:
             logging.info('sample = {}'.format(buf.hex()))
 
-    def compute_reward(self, base_reward, pos):
-        """
-        Tính reward cuối cùng dựa trên base_reward và số lần mutation tại vị trí pos.
-        Nếu số lần mutate vượt quá threshold, trừ reward theo penalty_factor.
-        Áp dụng log smoothing và cộng baseline để tránh reward nhanh chóng giảm về 0.
-        """
-        threshold = 5         # Số lần mutate cho phép trước khi penalize
-        penalty_factor = 0.1   # Mỗi lần vượt ngưỡng, trừ 0.1 reward
-        baseline = 0.1         # Baseline reward luôn được cộng thêm
-
-        count = self._mutation_count.get(pos, 0)
-        extra_mutations = count - threshold
-        if extra_mutations > 0:
-            penalized_reward = base_reward - penalty_factor * extra_mutations
-        else:
-            penalized_reward = base_reward
-        # Log smoothing: đảm bảo không giảm quá nhanh reward
-        adjusted_reward = math.log(1 + max(penalized_reward, 0))
-        final_reward = baseline + adjusted_reward
-        return final_reward
-
     def start(self):
         print(self._corpus)
         logging.info("#0 READ units: {}".format(self._corpus.length))
@@ -191,7 +170,7 @@ class Fuzzer(object):
                     base_reward = 0
 
                 # Tính reward cuối cùng bằng compute_reward
-                final_reward = self.compute_reward(base_reward, pos)
+                final_reward = math.log(1 + self._mutation_count.get(pos, 0)) + base_reward
                 rewards.append(final_reward)
                 self._total_coverage = total_coverage
 
