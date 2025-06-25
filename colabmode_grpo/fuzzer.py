@@ -113,13 +113,6 @@ class Fuzzer(object):
             f.write(buf)
         logging.info('[{}] sample written to {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), crash_path))
 
-    def compute_reward(self, base_reward, pos):
-        threshold, penalty_factor, baseline = 5, 0.1, 0.1
-        count = self._mutation_count.get(pos, 0)
-        extra_mutations = count - threshold
-        penalized_reward = base_reward - penalty_factor * extra_mutations if extra_mutations > 0 else base_reward
-        return baseline + math.log(1 + max(penalized_reward, 0))
-
     def start(self):
         logging.info("#0 READ units: {}".format(self._corpus.length))
         exit_code = 0
@@ -177,7 +170,7 @@ class Fuzzer(object):
                         base_reward = 0
 
                     # Tính reward cuối cùng bằng compute_reward
-                    final_reward = self.compute_reward(base_reward, pos)
+                    final_reward = math.log(1 + self._mutation_count.get(pos, 0)) + base_reward
                     rewards.append(final_reward)
                     self._total_coverage = total_coverage
 
